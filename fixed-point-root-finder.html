@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Numerical Root Finder – Fixed Point Iteration</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light;
+--bg:#f1f3fa;--card:#fff;--alt:#f3f5fc;--bd:#d5daee;--tx:#1b2040;--mu:#5d6491;--bl:#2563eb;--bl2:#1d4fd0;--pu:#7c3aed;--gr:#16a34a;--am:#d97706;--rd:#dc2626;
+--ok:#dcf7e8;--wn:#fff1d6;--er:#fee2e2;--inf:#e3ecff;--sans:"Segoe UI",system-ui,-apple-system,Roboto,Helvetica,Arial,sans-serif;--mono:Consolas,"SFMono-Regular",Menlo,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#0b0e1e;--card:#171c36;--alt:#1f2547;--bd:#2b3260;--tx:#e8ebfa;--mu:#9aa2d0;--bl:#4f8cff;--bl2:#3b77ea;--pu:#a78bfa;--gr:#22c55e;--am:#f59e0b;--rd:#f87171;--ok:#12382a;--wn:#43330f;--er:#47181c;--inf:#1b2a55}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#0b0e1e;--card:#171c36;--alt:#1f2547;--bd:#2b3260;--tx:#e8ebfa;--mu:#9aa2d0;--bl:#4f8cff;--bl2:#3b77ea;--pu:#a78bfa;--gr:#22c55e;--am:#f59e0b;--rd:#f87171;--ok:#12382a;--wn:#43330f;--er:#47181c;--inf:#1b2a55}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.45 var(--sans)}
+.wrap{max-width:1280px;margin:0 auto;padding:20px 18px 40px}
+header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px}
+h1{margin:0;font-size:26px;letter-spacing:-.01em;background:linear-gradient(90deg,var(--bl),var(--pu));-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{color:var(--mu);margin-top:2px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:16px}
+.grid{display:grid;grid-template-columns:330px minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}
+label{display:block;font-weight:600;margin:12px 0 4px}label:first-of-type{margin-top:0}
+.hint{color:var(--mu);font-size:12px;margin-top:2px}
+input{width:100%;padding:9px 11px;border-radius:10px;border:1px solid var(--bd);background:var(--alt);color:var(--tx);font:15px var(--mono)}
+input:focus{outline:2px solid var(--bl);outline-offset:0}input.bad{border-color:var(--rd);outline:2px solid var(--rd)}
+.btn{border:0;border-radius:12px;padding:11px 14px;font:600 13px var(--sans);cursor:pointer;color:#fff;background:var(--bl)}
+.btn:hover{background:var(--bl2)}.btn.main{width:100%;padding:14px;font-size:14px;margin-top:14px}
+.btn.alt{background:var(--pu)}.btn.line{background:transparent;color:var(--tx);border:2px solid var(--pu)}
+.btn.sm{background:var(--alt);color:var(--tx);border:1px solid var(--bd);padding:7px 11px;font-size:12px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+#err{color:var(--rd);font-size:13px;margin-top:10px;min-height:0}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (max-width:560px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{background:var(--card);border:1px solid var(--bd);border-top:4px solid var(--bl);border-radius:14px;padding:10px 14px}
+.kpi:nth-child(even){border-top-color:var(--pu)}
+.kpi b{display:block;font-size:11px;color:var(--mu);font-weight:600}.kpi span{display:block;font:700 19px var(--mono);overflow-wrap:anywhere}.kpi i{font-style:normal;font-size:11px;color:var(--mu)}
+#banner{margin:12px 0;padding:11px 14px;border-radius:12px;border:1px solid var(--bd);background:var(--inf);white-space:pre-line}
+#banner.ok{background:var(--ok);border-color:var(--gr)}#banner.warn{background:var(--wn);border-color:var(--am)}#banner.error{background:var(--er);border-color:var(--rd)}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tab{border:1px solid var(--bd);background:var(--alt);color:var(--tx);border-radius:999px;padding:6px 14px;font:600 13px var(--sans);cursor:pointer}
+.tab[aria-selected="true"]{background:var(--bl);border-color:var(--bl);color:#fff}
+.tbl{max-height:460px;overflow:auto;border:1px solid var(--bd);border-radius:10px}
+table{border-collapse:collapse;width:100%;font:13px var(--mono)}
+th{position:sticky;top:0;background:var(--alt);font:600 12px var(--sans);padding:8px 10px;text-align:right;white-space:nowrap}
+td{padding:6px 10px;text-align:right;border-top:1px solid var(--bd);white-space:nowrap}th:first-child,td:first-child{text-align:center}
+tr:nth-child(even) td{background:color-mix(in srgb,var(--alt) 55%,transparent)}
+canvas{width:100%;height:400px;display:block}
+.how{margin-top:16px;line-height:1.6}.how h2{margin:0 0 6px;font-size:17px}.how p{margin:6px 0}
+code,.fm{font-family:var(--mono);background:var(--alt);padding:2px 6px;border-radius:6px}
+.fm{display:block;padding:8px 12px;margin:8px 0;color:var(--pu);font-weight:700}
+.foot{color:var(--mu);font-size:12px;margin-top:20px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header><div><h1>NUMERICAL ROOT FINDER</h1><div class="sub">Fixed Point Iteration · xₙ₊₁ = g(xₙ), stop when |xₙ₊₁ − xₙ| &lt; ε</div></div>
+<button class="btn sm" id="theme" type="button">Light / dark</button></header>
+<div class="grid">
+<section class="card" aria-label="Inputs">
+<label for="f">Original function f(x)</label><input id="f" placeholder="e.g. x - cos(x)" autocomplete="off" spellcheck="false"><div class="hint">The equation to solve: f(x) = 0</div>
+<label for="g">Iteration function g(x)</label><input id="g" placeholder="e.g. cos(x)" autocomplete="off" spellcheck="false"><div class="hint">Entered separately – use the g(x) from your lecture notes.</div>
+<label for="x0">Initial guess x₀</label><input id="x0" placeholder="e.g. 0.5" autocomplete="off">
+<label for="tol">Tolerance ε</label><input id="tol" value="1e-6" autocomplete="off">
+<label for="maxIter">Maximum iterations</label><input id="maxIter" value="100" autocomplete="off"><div class="hint">Between 1 and 10,000</div>
+<div id="err" role="alert"></div>
+<button class="btn main" id="go" type="button">START CALCULATION</button>
+<div class="row2"><button class="btn line" id="reset" type="button">RESET</button><button class="btn alt" id="ex" type="button">EXAMPLE</button></div>
+<div class="hint" id="exnote" style="margin-top:10px"></div>
+</section>
+<section>
+<div class="kpis" id="kpis"></div>
+<div id="banner">Enter f(x), g(x) and x₀, then press START CALCULATION – or press EXAMPLE to load a ready-made problem.</div>
+<div class="card">
+<div class="tabs" role="tablist"><button class="tab" role="tab" data-t="table" aria-selected="true">Iterations</button><button class="tab" role="tab" data-t="fx" aria-selected="false">f(x) graph</button><button class="tab" role="tab" data-t="cob" aria-selected="false">Cobweb</button><button class="tab" role="tab" data-t="conv" aria-selected="false">Convergence</button></div>
+<div id="p-table" class="tbl"></div>
+<canvas id="cv" hidden aria-label="Graph"></canvas>
+</div>
+</section>
+</div>
+<div class="card how"><h2>How it works</h2>
+<p>A fixed point of g satisfies g(x*) = x*. To solve f(x) = 0 we rewrite it as x = g(x) and iterate from a starting guess x₀:</p>
+<span class="fm">xₙ₊₁ = g(xₙ),   n = 0, 1, 2, …</span>
+<p>Each step computes the error |xₙ₊₁ − xₙ| and stops when it is below ε. The residual |f(root)| is reported as an independent check: a fixed point of g is a root of f only if g was derived from f. If |g′(x*)| &lt; 1 the iteration converges (the error shrinks by about |g′| per step); if |g′(x*)| &gt; 1 it diverges. The original function f and the iteration function g are separate inputs, so you can enter the exact g from your lecture.</p>
+<p>Allowed in expressions: <code>+ − * / ^</code>, <code>sin cos tan asin acos atan sinh cosh tanh exp ln log log10 log2 sqrt abs</code>, constants <code>pi</code> and <code>e</code>. Implicit products such as <code>2x</code> are accepted.</p></div>
+<div class="foot">Web version of the desktop project · Team: [Student names] · Course: [Differential Equations / Numerical Methods]</div>
+</div>
+<script>
+/* ---------- Expression parser (own recursive-descent, no eval) ---------- */
+const E = m => new Error(m);
+const fin = v => { if (Number.isNaN(v)) throw E("domain error (invalid operation)"); if (!Number.isFinite(v)) throw E("overflow or division by zero"); return v; };
+const FN = {
+  sin: Math.sin, cos: Math.cos, tan: Math.tan, sinh: Math.sinh, cosh: Math.cosh, tanh: Math.tanh, exp: Math.exp, abs: Math.abs,
+  atan: Math.atan, arctan: Math.atan, log10: a => Math.log10(a), log2: a => Math.log2(a),
+  sqrt: a => { if (a < 0) throw E("square root of a negative number"); return Math.sqrt(a); },
+  ln: a => { if (a <= 0) throw E("logarithm of a non-positive number"); return Math.log(a); },
+  asin: a => { if (Math.abs(a) > 1) throw E("asin outside [−1, 1]"); return Math.asin(a); },
+  acos: a => { if (Math.abs(a) > 1) throw E("acos outside [−1, 1]"); return Math.acos(a); },
+};
+FN.log = FN.ln; FN.arcsin = FN.asin; FN.arccos = FN.acos;
+const CONST = { pi: Math.PI, e: Math.E };
+const NAMES = Object.keys(FN).join(", ");
+
+function normalise(s) {
+  s = s.replace(/[−–]/g, "-").replace(/[×·]/g, "*").replace(/÷/g, "/").replace(/√/g, "sqrt").replace(/π/g, "pi")
+       .replace(/²/g, "**2").replace(/³/g, "**3").trim();
+  s = s.replace(/^\s*(?:[fgFG]\s*\(\s*[xX]\s*\)|y)\s*=(?!=)\s*/, "");
+  return s.replace(/(?<![A-Za-z0-9_])X(?![A-Za-z0-9_])/g, "x").toLowerCase();
+}
+
+function compile(text, label, allowX = true) {
+  const fail = m => { throw E(label + ": " + m); };
+  if (!String(text).trim()) fail("is empty. Please enter a value.");
+  const src = normalise(String(text));
+  if (src.includes("=")) fail("do not type an equals sign – enter only the expression, e.g. cos(x).");
+  const re = /\s*(\d+\.?\d*(?:e[+-]?\d+)?|\.\d+(?:e[+-]?\d+)?|[a-z_][a-z0-9_]*|\*\*|[-+*/^()])/y;
+  const toks = []; let m, pos = 0;
+  while (pos < src.length && (re.lastIndex = pos, m = re.exec(src))) { toks.push(m[1]); pos = re.lastIndex; }
+  if (src.slice(pos).trim()) fail("unexpected character “" + src.slice(pos).trim()[0] + "”.");
+  let i = 0;
+  const peek = () => toks[i], isNum = t => t && /^[\d.]/.test(t), isId = t => t && /^[a-z_]/.test(t);
+  const expect = t => { if (toks[i] !== t) fail(t === ")" ? "a closing parenthesis ‘)’ is missing." : "expected ‘" + t + "’."); i++; };
+  function expr() { let a = term(); while (peek() === "+" || peek() === "-") { const op = toks[i++], b = term(), l = a; a = op === "+" ? x => fin(l(x) + b(x)) : x => fin(l(x) - b(x)); } return a; }
+  function term() {
+    let a = unary();
+    for (;;) {
+      const t = peek(); let op = null;
+      if (t === "*" || t === "/") { op = toks[i++]; }
+      else if (isNum(t) || isId(t) || t === "(") op = "*";            // implicit multiplication: 2x, x(x+1)
+      else break;
+      const b = unary(), l = a;
+      a = op === "*" ? x => fin(l(x) * b(x)) : x => { const d = b(x); if (d === 0) throw E("division by zero"); return fin(l(x) / d); };
+    }
+    return a;
+  }
+  function unary() { if (peek() === "-") { i++; const a = unary(); return x => -a(x); } if (peek() === "+") { i++; return unary(); } return power(); }
+  function power() {
+    const a = primary();
+    if (peek() === "^" || peek() === "**") { i++; const b = unary(); return x => { const p = a(x), q = b(x); if (p === 0 && q < 0) throw E("division by zero"); return fin(Math.pow(p, q)); }; }
+    return a;
+  }
+  function primary() {
+    const t = toks[i++];
+    if (t === undefined) fail("the expression ends unexpectedly.");
+    if (isNum(t)) { const v = parseFloat(t); if (Number.isNaN(v)) fail("bad number “" + t + "”."); return () => v; }
+    if (t === "(") { const a = expr(); expect(")"); return a; }
+    if (isId(t)) {
+      if (FN[t]) { const f = FN[t]; let a; if (peek() === "(") { i++; a = expr(); expect(")"); } else a = power(); return x => fin(f(a(x))); }
+      if (t === "x") { if (!allowX) fail("must be a plain number – the variable x is not allowed here."); return x => x; }
+      if (t in CONST) return () => CONST[t];
+      fail("unknown name ‘" + t + "’. The only variable is x. Functions: " + NAMES + "; constants: pi, e.");
+    }
+    fail("unexpected ‘" + t + "’.");
+  }
+  const fn = expr();
+  if (i < toks.length) fail("unexpected ‘" + toks[i] + "’ – check operators and parentheses.");
+  const safe = x => { try { return fn(x); } catch (e) { throw E(label + " cannot be evaluated at x = " + (+x.toPrecision(12)) + ": " + e.message + "."); } };
+  safe.source = String(text).trim();
+  return safe;
+}
+function number(text, label) { const v = compile(text, label, false)(0); return v; }
+
+/* ---------- Fixed Point Iteration engine ---------- */
+const LIMIT = 1e10, GROWTH = 12, CAP = 10000;
+function run(f, g, x0, tol, maxIter) {
+  if (!Number.isFinite(x0)) throw Object.assign(E("The initial guess x₀ must be a finite number."), { field: "x0" });
+  if (!(tol > 0)) throw Object.assign(E("The tolerance ε must be a positive number, e.g. 1e-6."), { field: "tol" });
+  if (!Number.isInteger(maxIter) || maxIter < 1 || maxIter > CAP) throw Object.assign(E("Maximum iterations must be a whole number between 1 and " + CAP.toLocaleString("en") + "."), { field: "maxIter" });
+  const t0 = performance.now(), R = { rows: [], status: "Not converged", message: "", root: null, residual: null, warnings: [], notes: [], x0, tol, maxIter };
+  let x = x0, prev = null, grow = 0, done = false, fUndef = false;
+  const safeF = v => { try { return f(v); } catch (e) { fUndef = true; return NaN; } };
+  for (let n = 0; n < maxIter; n++) {
+    let nx;
+    try { nx = g(x); } catch (e) { R.status = "Failed"; R.message = (n === 0 ? "Invalid initial guess – " : "Iteration " + n + " failed – ") + e.message; done = true; break; }
+    const err = Math.abs(nx - x); R.rows.push({ n, x, gx: nx, err, fx: safeF(x) });
+    if (!Number.isFinite(err)) { R.status = "Diverged"; R.message = "The step size overflowed – the iteration is diverging."; done = true; break; }
+    if (err < tol) { R.status = "Converged"; R.message = "Converged: |xₙ₊₁ − xₙ| = " + err.toExponential(3) + " < ε = " + tol + " after " + (n + 1) + " iteration(s)."; done = true; break; }
+    if (Math.abs(nx) > LIMIT) { R.status = "Diverged"; R.message = "Diverged: |x| exceeded 1e10 at iteration " + (n + 1) + " – the iterates run away to infinity."; done = true; break; }
+    grow = prev !== null && err > prev ? grow + 1 : 0;
+    if (grow >= GROWTH && err > R.rows[0].err) { R.status = "Diverged"; R.message = "Diverged: the error increased for " + grow + " consecutive iterations."; done = true; break; }
+    prev = err; x = nx;
+  }
+  if (!done) R.message = "Did not converge within " + maxIter + " iterations: last error " + R.rows[R.rows.length - 1].err.toExponential(3) + " is not smaller than ε = " + tol + ".";
+  if (R.rows.length) { R.root = R.rows[R.rows.length - 1].gx; try { R.residual = Math.abs(f(R.root)); } catch (e) { R.warnings.push("f(x) is undefined at the final estimate, so |f(root)| cannot be computed."); } }
+  if (fUndef) R.warnings.push("f(x) was undefined at some xₙ; those cells show “undefined”.");
+  const dg = p => { try { const h = 1e-6 * Math.max(1, Math.abs(p)); return Math.abs((g(p + h) - g(p - h)) / (2 * h)); } catch (e) { return null; } };
+  R.gp0 = dg(x0); R.gpRoot = R.root === null ? null : dg(R.root);
+  R.residualOk = R.residual !== null && R.residual <= Math.max(1e-6, 1e3 * tol);
+  if (R.status !== "Converged") { if (R.gp0 !== null && R.gp0 >= 1) R.warnings.push("|g′(x₀)| = " + R.gp0.toPrecision(4) + " ≥ 1: the sufficient condition for convergence (|g′| < 1) does not hold at the starting point."); }
+  else {
+    if (!R.residualOk) R.warnings.push("|f(root)| = " + R.residual.toExponential(3) + " is not small. A fixed point of g is a root of f only if g was derived from f (x = g(x) ⇔ f(x) = 0). Check that g(x) matches f(x).");
+    if (R.gpRoot !== null && R.gpRoot < 1) R.notes.push("|g′(root)| = " + R.gpRoot.toFixed(4) + " < 1: the fixed point is attracting (error shrinks by about " + R.gpRoot.toFixed(2) + " per step).");
+  }
+  R.ms = performance.now() - t0; return R;
+}
+const EXAMPLES = [
+  ["Fixed point of cosine", "x - cos(x)", "cos(x)", "0.5", "1e-8", "100", "x = cos(x): slow, oscillating convergence (|g′(root)| ≈ 0.67)."],
+  ["Square root of 2 (Babylonian form)", "x^2 - 2", "(x + 2/x)/2", "1", "1e-10", "50", "g′(√2) = 0, so convergence is extremely fast."],
+  ["Cubic x³ + x − 1 = 0", "x^3 + x - 1", "1/(1 + x^2)", "0.5", "1e-8", "200", "From x(x² + 1) = 1 we get x = 1/(1 + x²)."],
+  ["Exponential e^(−x) = x", "exp(-x) - x", "exp(-x)", "0.5", "1e-8", "100", "Root ≈ 0.5671432904 (the omega constant)."],
+  ["Quartic x⁴ − x − 10 = 0", "x^4 - x - 10", "(x + 10)^(1/4)", "2", "1e-10", "100", "Very flat g, fast convergence to ≈ 1.8555845."],
+  ["Divergent rearrangement (demo)", "x^2 - 2", "x^2 + x - 2", "1.5", "1e-6", "100", "Also a valid rearrangement of x² − 2 = 0, but |g′(√2)| = 1 + 2√2 > 1, so it diverges."],
+];
+if (typeof module !== "undefined") module.exports = { compile, number, run, EXAMPLES };
+/* ---------- UI ---------- */
+const $ = s => document.querySelector(s), ids = ["f", "g", "x0", "tol", "maxIter"];
+let S = null, tab = "table", exIdx = -1;
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const fx = (v, d = 10) => v === null || v === undefined ? "—" : Number.isNaN(v) ? "undefined" : Math.abs(v) >= 1e8 ? v.toExponential(5) : v.toFixed(d);
+const sci = (v, d = 3) => v === null || v === undefined ? "—" : Number.isNaN(v) ? "undefined" : v.toExponential(d);
+const esc = s => String(s).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+
+function kpis(R) {
+  const c = R ? (R.status === "Converged" ? "var(--gr)" : R.status === "Not converged" ? "var(--am)" : "var(--rd)") : "";
+  const warn = R && R.status === "Converged" && !R.residualOk;
+  const d = R ? [["Approximate root", fx(R.root), R.status === "Converged" ? "estimate of the root" : "last iterate (not reliable)"], ["Iterations", R.rows.length, "of maximum " + R.maxIter.toLocaleString("en")],
+    ["Final absolute error", sci(R.rows.length ? R.rows[R.rows.length - 1].err : null), "tolerance ε = " + R.tol], ["Residual |f(root)|", sci(R.residual), R.residualOk ? "close to 0 ✔" : "check g(x) against f(x)"],
+    ["Convergence status", R.status, R.status === "Converged" ? "tolerance reached" : "see message below"], ["Calculation time", R.ms.toFixed(2) + " ms", " "]]
+    : ["Approximate root", "Iterations", "Final absolute error", "Residual |f(root)|", "Convergence status", "Calculation time"].map(t => [t, "—", " "]);
+  $("#kpis").innerHTML = d.map((k, i) => `<div class="kpi"><b>${k[0]}</b><span${i === 4 ? ` style="color:${warn ? "var(--am)" : c}"` : ""}>${esc(k[1])}</span><i>${esc(k[2])}</i></div>`).join("");
+}
+function banner(text, cls) { const b = $("#banner"); b.textContent = text; b.className = cls || ""; }
+
+function calculate() {
+  ids.forEach(i => $("#" + i).classList.remove("bad")); $("#err").textContent = "";
+  const P = [["f", t => compile(t, "Original function f(x)")], ["g", t => compile(t, "Iteration function g(x)")], ["x0", t => number(t, "Initial guess x₀")],
+    ["tol", t => number(t, "Tolerance ε")], ["maxIter", t => { const v = number(t, "Maximum iterations"); if (!Number.isInteger(v)) throw E("Maximum iterations must be a whole number."); return v; }]], V = {};
+  for (const [k, p] of P) { try { V[k] = p($("#" + k).value); } catch (e) { $("#" + k).classList.add("bad"); $("#err").textContent = "⚠ " + e.message; return; } }
+  let R;
+  try { R = run(V.f, V.g, V.x0, V.tol, V.maxIter); } catch (e) { if (e.field) $("#" + e.field).classList.add("bad"); $("#err").textContent = "⚠ " + e.message; return; }
+  S = { R, f: V.f, g: V.g }; kpis(R);
+  banner([R.message, ...R.warnings.map(w => "⚠ " + w), ...R.notes.map(n => "ℹ " + n)].join("\n"), R.status === "Failed" || R.status === "Diverged" ? "error" : R.status === "Not converged" || R.warnings.length ? "warn" : "ok");
+  show("table");
+}
+function reset() { $("#f").value = $("#g").value = $("#x0").value = ""; $("#tol").value = "1e-6"; $("#maxIter").value = "100"; ids.forEach(i => $("#" + i).classList.remove("bad")); $("#err").textContent = ""; $("#exnote").textContent = ""; exIdx = -1; S = null; kpis(null); banner("Enter f(x), g(x) and x₀, then press START CALCULATION – or press EXAMPLE to load a ready-made problem."); show("table"); }
+function example() { exIdx = (exIdx + 1) % EXAMPLES.length; const e = EXAMPLES[exIdx]; ["f", "g", "x0", "tol", "maxIter"].forEach((k, i) => $("#" + k).value = e[i + 1]); ids.forEach(i => $("#" + i).classList.remove("bad")); $("#err").textContent = "";
+  $("#exnote").textContent = "Example " + (exIdx + 1) + "/" + EXAMPLES.length + ": " + e[0] + ". " + e[6]; banner("Example loaded: " + e[0] + ". Press START CALCULATION to run it."); }
+
+/* ---------- Graphs (canvas) ---------- */
+function win(R) {
+  const p = [R.x0, ...R.rows.slice(0, 60).map(r => r.gx), ...(R.root !== null ? [R.root] : [])].filter(v => Number.isFinite(v) && Math.abs(v) <= 1e6);
+  const lo = Math.min(...p), hi = Math.max(...p), h = Math.max((hi - lo) * .75, 1), c = (lo + hi) / 2; return [c - h, c + h];
+}
+const samples = (fn, a, b, n = 700) => Array.from({ length: n }, (_, i) => { const x = a + (b - a) * i / (n - 1); try { return [x, fn(x)]; } catch (e) { return [x, NaN]; } });
+function nice(a, b, n = 6) { const r = (b - a) / n, p = Math.pow(10, Math.floor(Math.log10(r))), m = r / p, s = (m < 1.5 ? 1 : m < 3 ? 2 : m < 7 ? 5 : 10) * p, o = []; for (let v = Math.ceil(a / s) * s; v <= b + 1e-12; v += s) o.push(+v.toPrecision(12)); return o; }
+function star(c, x, y, r) { c.beginPath(); for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, q = i % 2 ? r * .45 : r; c.lineTo(x + q * Math.cos(a), y + q * Math.sin(a)); } c.closePath(); c.fill(); c.stroke(); }
+
+function plot(cv, o) {
+  const dpr = devicePixelRatio || 1, r = cv.getBoundingClientRect(); if (!r.width) return;
+  cv.width = r.width * dpr; cv.height = r.height * dpr; const c = cv.getContext("2d"); c.scale(dpr, dpr);
+  const W = r.width, H = r.height, L = 58, Rm = 14, T = 34, B = 40, [x0, x1] = o.xl; let [y0, y1] = o.yl;
+  const ly = v => Math.log10(v), Y0 = o.log ? ly(y0) : y0, Y1 = o.log ? ly(y1) : y1;
+  const sx = x => L + (x - x0) / (x1 - x0) * (W - L - Rm), sy = y => H - B - ((o.log ? ly(y) : y) - Y0) / (Y1 - Y0) * (H - T - B);
+  const tx = css("--tx"), mu = css("--mu"), bd = css("--bd");
+  c.font = "11px " + css("--sans"); c.fillStyle = tx; c.textAlign = "center"; c.font = "bold 13px " + css("--sans"); c.fillText(o.title, W / 2, 18); c.font = "11px " + css("--sans");
+  c.strokeStyle = bd; c.lineWidth = 1; c.fillStyle = mu;
+  nice(x0, x1).forEach(v => { const X = sx(v); c.beginPath(); c.setLineDash([3, 3]); c.moveTo(X, T); c.lineTo(X, H - B); c.stroke(); c.setLineDash([]); c.textAlign = "center"; c.fillText(+v.toPrecision(6), X, H - B + 15); });
+  (o.log ? Array.from({ length: Math.ceil(Y1) - Math.floor(Y0) + 1 }, (_, i) => Math.pow(10, Math.floor(Y0) + i)).filter(v => v >= y0 * .999 && v <= y1 * 1.001) : nice(y0, y1)).forEach(v => { const Y = sy(v); c.beginPath(); c.setLineDash([3, 3]); c.moveTo(L, Y); c.lineTo(W - Rm, Y); c.stroke(); c.setLineDash([]); c.textAlign = "right"; c.fillText(o.log ? v.toExponential(0) : +v.toPrecision(4), L - 6, Y + 4); });
+  c.strokeStyle = mu; c.strokeRect(L, T, W - L - Rm, H - T - B); c.textAlign = "center"; c.fillStyle = tx; c.fillText(o.xlabel, (L + W - Rm) / 2, H - 6);
+  c.save(); c.translate(14, (T + H - B) / 2); c.rotate(-Math.PI / 2); c.fillText(o.ylabel, 0, 0); c.restore();
+  c.save(); c.beginPath(); c.rect(L, T, W - L - Rm, H - T - B); c.clip();
+  for (const s of o.series) {
+    const col = css(s.color); c.strokeStyle = col; c.fillStyle = col; c.lineWidth = s.w || 2; c.setLineDash(s.dash || []);
+    if (s.hline !== undefined) { c.beginPath(); c.moveTo(L, sy(s.hline)); c.lineTo(W - Rm, sy(s.hline)); c.stroke(); }
+    else if (s.dots) s.pts.forEach(p => { if (Number.isFinite(p[0]) && Number.isFinite(p[1])) { c.beginPath(); c.arc(sx(p[0]), sy(p[1]), s.dots, 0, 7); c.fill(); } });
+    else if (s.star) { c.strokeStyle = tx; c.lineWidth = .8; s.pts.forEach(p => star(c, sx(p[0]), sy(p[1]), 11)); }
+    else { c.beginPath(); let pen = false; for (const p of s.pts) { if (!Number.isFinite(p[1]) || (o.log && p[1] <= 0)) { pen = false; continue; } const X = sx(p[0]), Y = sy(p[1]); if (Math.abs(Y) > 1e5) { pen = false; continue; } pen ? c.lineTo(X, Y) : c.moveTo(X, Y); pen = true; } c.stroke(); }
+    c.setLineDash([]);
+  }
+  c.restore();
+  c.textAlign = "left"; let ly0 = T + 14; c.font = "11px " + css("--sans");
+  o.series.filter(s => s.label).forEach(s => { c.fillStyle = css(s.color); c.fillRect(L + 8, ly0 - 8, 14, 3); c.fillStyle = tx; c.fillText(s.label, L + 28, ly0 - 3); ly0 += 15; });
+}
+function yrange(vals, extra) { const v = vals.filter(Number.isFinite).sort((a, b) => a - b); let lo = v.length ? v[Math.floor(v.length * .02)] : -1, hi = v.length ? v[Math.min(v.length - 1, Math.floor(v.length * .98))] : 1; lo = Math.min(lo, 0, ...extra); hi = Math.max(hi, 0, ...extra); const p = .12 * (hi - lo) || 1; return [lo - p, hi + p]; }
+
+function draw() {
+  const cv = $("#cv"); if (!S || tab === "table") return; const { R, f, g } = S, [a, b] = win(R), root = R.root !== null && R.root >= a && R.root <= b ? [[R.root, 0]] : [];
+  if (tab === "fx") {
+    const pts = R.rows.slice(0, 60).filter(r => r.x >= a && r.x <= b && Number.isFinite(r.fx)), cur = samples(f, a, b);
+    plot(cv, { title: "f(x), iterates and estimated root", xlabel: "x", ylabel: "f(x)", xl: [a, b], yl: yrange(cur.map(p => p[1]), pts.map(r => r.fx)), series: [
+      { pts: cur, color: "--bl", label: "f(x)", w: 2.4 }, { hline: 0, color: "--mu", w: 1.2, label: "y = 0" }, { pts: pts.map(r => [r.x, r.fx]), color: "--am", dots: 4.5, label: "iterates (xₙ, f(xₙ))" },
+      { pts: pts.slice(0, 1).map(r => [r.x, r.fx]), color: "--gr", dots: 7, label: "initial guess x₀" }, { pts: root.map(p => [R.root, 0]), color: "--rd", star: 1, label: "estimated root" }] });
+  } else if (tab === "cob") {
+    const path = [[R.x0, 0]]; R.rows.slice(0, 40).forEach(r => { path.push([r.x, r.gx], [r.gx, r.gx]); });
+    plot(cv, { title: "Cobweb diagram of x = g(x)", xlabel: "x", ylabel: "y", xl: [a, b], yl: [a, b], series: [{ pts: samples(g, a, b), color: "--pu", label: "y = g(x)", w: 2.4 },
+      { pts: [[a, a], [b, b]], color: "--mu", dash: [6, 4], label: "y = x", w: 1.4 }, { pts: path, color: "--am", label: "iteration path", w: 1.5 }, { pts: [[R.x0, 0]], color: "--gr", dots: 7, label: "initial guess x₀" }, { pts: root.map(() => [R.root, R.root]), color: "--rd", star: 1, label: "fixed point" }] });
+  } else {
+    const e = R.rows.map(r => r.err), log = e.every(v => v > 0), mx = Math.max(...e, R.tol), mn = Math.min(...e, R.tol), pts = e.map((v, i) => [i, v]);
+    plot(cv, { title: "Convergence history", xlabel: "iteration n", ylabel: "absolute error |xₙ₊₁ − xₙ|", xl: [0, Math.max(e.length - 1, 1)], log, yl: log ? [mn / 3, mx * 3] : [0, mx * 1.1], series: [
+      { pts, color: "--pu", w: 2.2, label: "|xₙ₊₁ − xₙ|" }, { pts: e.length <= 60 ? pts : [], color: "--pu", dots: 3.5 }, { hline: R.tol, color: "--rd", dash: [6, 4], w: 1.5, label: "tolerance ε" }] });
+  }
+}
+function show(t) {
+  tab = t; document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.t === t));
+  $("#p-table").hidden = t !== "table"; $("#cv").hidden = t === "table";
+  if (t === "table") $("#p-table").innerHTML = S ? `<table><thead><tr><th>Iteration</th><th>xₙ</th><th>g(xₙ) = xₙ₊₁</th><th>Absolute error</th><th>f(xₙ)</th></tr></thead><tbody>${S.R.rows.map(r => `<tr><td>${r.n}</td><td>${fx(r.x)}</td><td>${fx(r.gx)}</td><td>${sci(r.err, 4)}</td><td>${fx(r.fx)}</td></tr>`).join("")}</tbody></table>` : `<div class="hint" style="padding:24px;text-align:center">Run a calculation to see the iteration table and graphs.</div>`;
+  else if (!S) { const c = $("#cv"), x = c.getContext("2d"); c.width = c.width; }
+  else draw();
+}
+$("#go").onclick = calculate; $("#reset").onclick = reset; $("#ex").onclick = example;
+ids.forEach(i => $("#" + i).addEventListener("keydown", e => { if (e.key === "Enter") calculate(); }));
+document.querySelectorAll(".tab").forEach(b => b.onclick = () => show(b.dataset.t));
+$("#theme").onclick = () => { const d = document.documentElement, dark = d.dataset.theme ? d.dataset.theme === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; d.dataset.theme = dark ? "light" : "dark"; draw(); };
+addEventListener("resize", draw); matchMedia("(prefers-color-scheme: dark)").addEventListener("change", draw);
+kpis(null); show("table");
+</script>
+</body>
+</html>
